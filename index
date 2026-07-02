@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winter — Rehab Dashboard</title>
+<style>
+  :root{
+    --bg:#f4f2ee; --panel:#ffffff; --ink:#2b2b28; --muted:#78746c;
+    --line:#e4e0d8; --accent:#3f6b5a; --accent-soft:#e7efe9;
+    --amber:#b5802a; --amber-soft:#f6ecd9; --rust:#a8532e; --rust-soft:#f4e2d8;
+    --blue:#3a5a78; --blue-soft:#e2eaf1; --done:#3f6b5a;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:15px;line-height:1.5;}
+  .wrap{max-width:1040px;margin:0 auto;padding:22px 20px 80px;}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px;}
+  h1{margin:0;font-size:28px;letter-spacing:-.3px;}
+  .sig{color:var(--muted);font-size:13.5px;margin-top:3px;}
+  .status-chip{background:var(--accent-soft);color:var(--accent);border-radius:999px;
+    padding:7px 14px;font-size:13px;font-weight:600;white-space:nowrap;}
+  nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+  nav.tabs button{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    padding:9px 16px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
+  nav.tabs button:hover{color:var(--ink);}
+  nav.tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .view{display:none;} .view.active{display:block;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .card h2{margin:0 0 4px;font-size:19px;} .card h3{margin:0 0 10px;font-size:15px;}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 14px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .stat{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .stat .v{font-size:16px;font-weight:600;margin-top:3px;}
+  /* phases */
+  .phase{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .phase-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;background:var(--panel);}
+  .phase-head:hover{background:#faf9f6;}
+  .phase.now{border-color:var(--accent);}
+  .phase.now .phase-head{background:var(--accent-soft);}
+  .phase-num{font-size:13px;font-weight:700;color:#fff;background:var(--muted);border-radius:8px;
+    padding:4px 9px;white-space:nowrap;}
+  .phase.now .phase-num{background:var(--accent);}
+  .phase-title{font-weight:600;font-size:15.5px;flex:1;}
+  .phase-dates{font-size:12.5px;color:var(--muted);}
+  .now-tag{background:var(--accent);color:#fff;font-size:11px;font-weight:700;border-radius:999px;
+    padding:3px 9px;text-transform:uppercase;letter-spacing:.4px;}
+  .phase-body{padding:4px 18px 18px;display:none;}
+  .phase.open .phase-body{display:block;}
+  .phase-body ul{margin:8px 0 0;padding-left:20px;} .phase-body li{margin:5px 0;}
+  .caret{color:var(--muted);font-size:12px;transition:.2s;}
+  .phase.open .caret{transform:rotate(90deg);}
+  .avoid{background:var(--rust-soft);border-left:3px solid var(--rust);border-radius:6px;
+    padding:9px 12px;margin-top:12px;font-size:13.5px;color:#7a3d20;}
+  /* checklist */
+  .ex{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);}
+  .ex:last-child{border-bottom:none;}
+  .ex input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);cursor:pointer;flex:none;}
+  .ex .lbl{flex:1;} .ex .lbl .t{font-weight:600;} .ex .lbl .d{font-size:13px;color:var(--muted);}
+  .ex.checked .lbl .t{text-decoration:line-through;color:var(--muted);}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+  .pill.core{background:var(--blue-soft);color:var(--blue);}
+  .pill.ride{background:var(--accent-soft);color:var(--accent);}
+  .pill.last{background:var(--amber-soft);color:var(--amber);}
+  .pill.post{background:var(--rust-soft);color:var(--rust);}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px;}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;
+    border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn:hover{background:#faf9f6;} .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.primary:hover{background:#355a4c;}
+  .progress{height:8px;background:var(--line);border-radius:999px;overflow:hidden;margin:10px 0 2px;}
+  .progress > div{height:100%;background:var(--accent);width:0;transition:.3s;}
+  input[type=date],select,input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    font-size:14px;font-family:inherit;background:#fff;color:var(--ink);}
+  /* appointments */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
+    padding:8px 10px;border-bottom:2px solid var(--line);}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:hover td{background:#faf9f6;}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;}
+  .t-imaging{background:var(--blue-soft);color:var(--blue);}
+  .t-modality{background:var(--accent-soft);color:var(--accent);}
+  .t-farrier{background:var(--amber-soft);color:var(--amber);}
+  .t-bodywork{background:#efe7f2;color:#6b4a7a;}
+  .t-rehab{background:var(--rust-soft);color:var(--rust);}
+  .t-vet{background:#e0eef0;color:#2f6d72;}
+  .up-row td{background:var(--amber-soft)!important;}
+  .del{color:var(--rust);cursor:pointer;font-weight:700;border:none;background:none;font-size:15px;}
+  .edit,.save,.cancel{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;
+    padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;margin-right:4px;font-family:inherit;}
+  .edit:hover,.cancel:hover{background:#faf9f6;}
+  .save{background:var(--accent);color:#fff;border-color:var(--accent);}
+  tr.editing td{background:var(--amber-soft);}
+  td input[type=text],td input[type=date],td select{width:100%;font-size:12.5px;padding:5px 6px;}
+  .addform{display:grid;grid-template-columns:130px 130px 1fr 1fr auto;gap:8px;align-items:center;margin-top:6px;}
+  .note{font-size:12.5px;color:var(--muted);}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px;}
+  details.raw{margin-top:8px;} details.raw summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;}
+  @media(max-width:640px){.addform{grid-template-columns:1fr 1fr;}}
+  @media print{
+    nav.tabs,.toolbar,.no-print,.del,.addform{display:none!important;}
+    .view{display:none!important;} .view.print-me{display:block!important;}
+    body{background:#fff;} .card{box-shadow:none;border:1px solid #ccc;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Winter</h1>
+      <div class="sig">Dark Winter · 7 y/o German Warmblood gelding · Showjumper · Owner: Dr. Jessica Cowan · rDVM: Dr. Chauncey Smith</div>
+    </div>
+    <div class="status-chip" id="statusChip">Home from rehab</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-view="overview">Overview</button>
+    <button data-view="workload">Weekly Workload</button>
+    <button data-view="checklist">Daily Checklist</button>
+    <button data-view="appts">Appointments</button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section class="view active" id="overview">
+    <div class="card">
+      <h2>Where he's at</h2>
+      <p class="sub">Discharged sound from ESMR-AZ on June 25, 2026 after ~4 months of professional rehab. Sound trotting in hand and on the lunge both directions.</p>
+      <div class="grid">
+        <div class="stat"><div class="k">Current phase</div><div class="v" id="ovPhase">—</div></div>
+        <div class="stat"><div class="k">Day of program</div><div class="v" id="ovDay">—</div></div>
+        <div class="stat"><div class="k">Ride target</div><div class="v" id="ovRide">—</div></div>
+        <div class="stat"><div class="k">Next recheck</div><div class="v">Dr. Smith · ~Jul 25</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>The diagnosis, briefly</h2>
+      <p class="sub" style="margin-bottom:8px">Chronic RF lameness. Localized to a PDN block; RF fetlock added as a second source during rehab blocking.</p>
+      <ul style="margin:0;padding-left:20px">
+        <li><b>Initial MRI (Jan 21, 2026):</b> mild-to-moderate RF lateral palmar process edema + adjacent laminar inflammation (most significant), mild navicular edema, mild DIP osteoarthrosis/synovitis bilaterally.</li>
+        <li><b>Recheck MRI (May 26, 2026):</b> resolved navicular & P3 edema, improved lateral palmar process. Residual RF fetlock OA — dorsal MC3 condylar edema and shallow sagittal ridge subchondral defect. Radiologist: consider increasing work level.</li>
+        <li><b>Ultrasound (Mar 9, 2026):</b> mild medial suspensory branch desmopathy; osseous roughening of dorsal MC3 condyles.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>The rules for now</h2>
+      <div class="grid">
+        <div class="stat"><div class="k">Housing</div><div class="v" style="font-size:14px">Stall only. Return to turnout gradually at your discretion.</div></div>
+        <div class="stat"><div class="k">Farrier</div><div class="v" style="font-size:14px">6-week cycle. Rads before resets. Last reset Jun 24.</div></div>
+        <div class="stat"><div class="k">Modalities</div><div class="v" style="font-size:14px">Shockwave + IRAP RF fetlock every 30–45 days ×2 more. Last Jun 4.</div></div>
+        <div class="stat"><div class="k">Diet / meds</div><div class="v" style="font-size:14px">Normal diet. No medications.</div></div>
+      </div>
+      <div class="avoid" style="margin-top:14px"><b>Always avoid this phase:</b> excessive lunging (&gt;5 min or fast), tight turns, hard backing, uneven ground surfaces.</div>
+    </div>
+    <div class="card no-print">
+      <h3>Program start date</h3>
+      <p class="sub">Week 1 of ridden work. Everything else counts from here. Change it if his start shifts.</p>
+      <input type="date" id="startDate">
+      <span class="note" style="margin-left:10px">Discharge was Jun 25, 2026 · recheck ~30 days post-discharge.</span>
+    </div>
+  </section>
+
+  <!-- WORKLOAD -->
+  <section class="view" id="workload">
+    <div class="card">
+      <h2>Week-by-week ridden workload</h2>
+      <p class="sub">From ESMR-AZ discharge (Jun 25, 2026). Ride once daily, 3–5×/week. On non-ride days he can do walker or hand-walk sessions instead. Recheck with Dr. Smith before advancing past Week 6.</p>
+      <div id="phaseList"></div>
+      <div class="avoid"><b>Every phase, avoid:</b> excessive lunging (&gt;5 min / fast), tight turns, hard backing, uneven ground.</div>
+    </div>
+    <div class="card">
+      <h3>Walker <span class="note">— up to 30 min, every day</span></h3>
+      <p class="sub">Ride days too — he's not on turnout, so walk him as much as possible. Equiband alternates by day; Sunday off.</p>
+      <table>
+        <thead><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+        <tbody><tr>
+          <td>Belly band</td><td>Butt band</td><td>Belly band</td><td>Butt band</td>
+          <td>Belly band</td><td>Butt band</td><td>No bands</td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Pole work</h3>
+      <ul style="margin:6px 0 0;padding-left:20px">
+        <li>Pole passes in hand — 3 poles, one stride apart (flat). 3–5×/week.</li>
+        <li>Straddle pole — 2 passes. 3×/week.</li>
+      </ul>
+      <p class="note" style="margin-top:10px">Per discharge, pole passes move under saddle at the walk from Weeks 3–4.</p>
+    </div>
+    <div class="card">
+      <h3>Core strengthening &amp; stretches <span class="note">— once/day, 3–5×/week</span></h3>
+      <ul style="margin:6px 0 0;padding-left:20px">
+        <li>Combined CT mobilizations + sternal lifts — 5 reps, hold 5–8 sec each.</li>
+        <li>Wither pulls — 3 each side, hold 5–8 sec.</li>
+        <li>Side (lateral) stretches — 3 each direction.</li>
+        <li>Hindlimb circumductions — 15 reps each direction, each hind.</li>
+        <li>Diagonal tail pulls — 3 reps, hold 5–8 sec.</li>
+        <li>Ventral cervical flexions to level of front fetlocks — 5 reps (do last).</li>
+        <li>Post ride/walk: hind limb crossover stretch — place the limb, let him hold as long as he wants.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>After Week 6</h3>
+      <p class="sub" style="margin:0">Recheck with Dr. Smith ~late July. Expect ~30–45 days of light riding as above, then a gradual return to full work over the following ~30 days — a 60-day at-home "legging up." The conservative timeline is for the best long-term outcome, not a lack of progress. Adjust to his clinical comfort.</p>
+    </div>
+  </section>
+
+  <!-- CHECKLIST -->
+  <section class="view" id="checklist">
+    <div class="card no-print">
+      <h2>Daily rehab checklist</h2>
+      <p class="sub">Auto-set to his current phase. Share this tab or print it for barn staff. Check-offs save on this device and reset each day.</p>
+      <div class="toolbar">
+        <span class="note">Day:</span>
+        <input type="date" id="checkDate">
+        <button class="btn" id="resetCheck">Reset today</button>
+        <button class="btn primary" id="printCheck">Print for barn</button>
+      </div>
+      <div class="progress"><div id="checkBar"></div></div>
+      <div class="note" id="checkCount" style="text-align:right"></div>
+    </div>
+
+    <div class="card print-block">
+      <h3 id="clHeader">Today · —</h3>
+      <p class="sub" id="clPhaseLine"></p>
+      <h3>Ridden work</h3>
+      <div id="checkRide"></div>
+      <h3 style="margin-top:18px">Walker <span class="pill ride" id="bandPill">—</span></h3>
+      <div id="checkWalker"></div>
+      <h3 style="margin-top:18px">Pole work</h3>
+      <div id="checkPole"></div>
+      <h3 style="margin-top:18px">Core strengthening <span class="pill core">once/day · 3–5×/week</span></h3>
+      <div id="checkCore"></div>
+      <h3 style="margin-top:18px">As needed <span class="note" style="font-weight:400">— optional, just track when you use them</span></h3>
+      <div id="checkOptional"></div>
+      <p class="note" style="margin-top:12px">Stretch technique was demonstrated at pickup. Questions on how to perform these — contact Jess at 940-208-2607.</p>
+    </div>
+  </section>
+
+  <!-- APPOINTMENTS -->
+  <section class="view" id="appts">
+    <div class="card">
+      <h2>Upcoming</h2>
+      <p class="sub">Add vet, farrier, bodywork, imaging — anything on the calendar. Saves on this device.</p>
+      <table><thead><tr><th>Date</th><th>Type</th><th>Provider</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="upBody"></tbody></table>
+      <div class="addform no-print">
+        <input type="date" id="nDate">
+        <select id="nType">
+          <option>Vet</option><option>Modality</option><option>Farrier</option>
+          <option>Bodywork</option><option>Imaging</option><option>Rehab</option>
+        </select>
+        <input type="text" id="nProv" placeholder="Provider">
+        <input type="text" id="nNotes" placeholder="Notes">
+        <button class="btn primary" id="addAppt">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>History</h2>
+      <p class="sub">Reconstructed from the discharge summary, MRI reports, and his Drive folders. Add anything I missed.</p>
+      <table><thead><tr><th>Date</th><th>Type</th><th>Provider</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="pastBody"></tbody></table>
+      <div class="legend">
+        <span><span class="tag t-imaging">Imaging</span></span>
+        <span><span class="tag t-modality">Modality</span></span>
+        <span><span class="tag t-farrier">Farrier</span></span>
+        <span><span class="tag t-bodywork">Bodywork</span></span>
+        <span><span class="tag t-rehab">Rehab</span></span>
+        <span><span class="tag t-vet">Vet</span></span>
+      </div>
+      <p class="note" style="margin-top:12px">Bodywork dates are pulled from his Drive file names. Three files (2.4, 2.21, 3.28) had ambiguous years and were left out — add them if you know the dates.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+const LS = {
+  start:"winter_start", check:"winter_check", up:"winter_upcoming", del:"winter_pastdel", padd:"winter_pastadd",
+  user:"winter_user_appts", ov:"winter_appt_overrides"
+};
+const DEFAULT_START = "2026-06-29"; // Week 1, this week
+const DISCHARGE = "2026-06-25";
+
+/* ---------- phases ---------- */
+const PHASES = [
+  { n:"Weeks 1–2", wk:[1,2], ride:"Ride 20 min, walk only",
+    items:[
+      "Ride 20 min, once daily, 3–5×/week — walk only."
+    ]},
+  { n:"Weeks 3–4", wk:[3,4], ride:"Ride 20 min + trot intervals",
+    items:[
+      "Ride 20 min, once daily, 3–5×/week.",
+      "Add 5 min total of trot interval work (e.g. walk 5 / trot 1 / walk 1, repeat)."
+    ]},
+  { n:"Weeks 5–6", wk:[5,6], ride:"Ride 25 min + trot & canter intervals",
+    items:[
+      "Ride 25 min, once daily, 3–5×/week.",
+      "Light trot intervals, 10 min total/session (e.g. walk 5 / trot 1 / walk 3).",
+      "Introduce canter intervals, 5 min total/session.",
+      "Split work evenly between left and right. Avoid tight circles under saddle."
+    ]}
+];
+// Walker: up to 30 min daily, equiband alternates by weekday (0=Sun … 6=Sat)
+const BANDS = ["No bands — rest day","Belly band","Butt band","Belly band","Butt band","Belly band","Butt band"];
+const POLE = [
+  {t:"Pole passes in hand — 3 poles, one stride apart (flat)", d:"3–5×/week"},
+  {t:"Straddle pole — 2 passes", d:"3×/week"}
+];
+const CORE = [
+  {t:"Combined CT mobilizations + sternal lifts", d:"5 reps, hold each 5–8 seconds"},
+  {t:"Wither pulls", d:"3 each side, hold each 5–8 seconds"},
+  {t:"Side (lateral) stretches", d:"3 each direction"},
+  {t:"Hindlimb circumductions", d:"15 reps each direction, each hind limb"},
+  {t:"Diagonal tail pulls", d:"3 reps, hold each 5–8 seconds"},
+  {t:"Ventral cervical flexions to level of front fetlocks", d:"5 reps — perform these LAST", last:true},
+  {t:"Post ride/walk: hind limb crossover stretch", d:"Place the limb, let him hold as long as he wants", post:true}
+];
+const OPTIONAL = [
+  {id:"bemer", t:"Bemer"},
+  {id:"laser", t:"Laser"}
+];
+
+/* ---------- appointments seed ---------- */
+const PAST = [
+  {d:"2025-06-27",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-07-22",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-08-21",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-09-08",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-09-30",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-10-15",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-10-23",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-11-20",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-12-18",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2025-12-31",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2026-01-14",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2026-01-21",t:"Imaging",p:"Cave Creek Equine",n:"MRI, bilateral front feet. RF lateral palmar process edema + laminar inflammation (most significant); mild navicular edema; mild DIP OA/synovitis. Radiologist: K. Selberg."},
+  {d:"2026-01-28",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2026-02-12",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2026-02-25",t:"Bodywork",p:"Bodywork/PEMF",n:"Bodywork session"},
+  {d:"2026-02-26",t:"Rehab",p:"ESMR-AZ",n:"Admitted to professional rehabilitation."},
+  {d:"2026-03-09",t:"Imaging",p:"ESMR-AZ",n:"Ultrasound RF fetlock & suspensory branches: mild medial suspensory branch desmopathy; osseous roughening dorsal MC3 condyles."},
+  {d:"2026-03-14",t:"Modality",p:"ESMR-AZ",n:"IRAP harvest."},
+  {d:"2026-03-27",t:"Modality",p:"ESMR-AZ",n:"IRAP therapy + shockwave (800 pulses, 20mm, E6), RF fetlock."},
+  {d:"2026-04-10",t:"Modality",p:"ESMR-AZ",n:"IRAP therapy + shockwave, RF fetlock."},
+  {d:"2026-04-22",t:"Modality",p:"ESMR-AZ",n:"Shockwave, RF fetlock."},
+  {d:"2026-05-08",t:"Modality",p:"ESMR-AZ",n:"IRAP therapy, RF fetlock."},
+  {d:"2026-05-26",t:"Imaging",p:"Cave Creek Equine",n:"Recheck MRI (feet + RF fetlock): resolved P3/navicular edema, improved lateral palmar process. Residual RF fetlock OA — dorsal MC3 condylar edema, sagittal ridge subchondral defect. Radiologist: consider increasing work."},
+  {d:"2026-06-04",t:"Modality",p:"ESMR-AZ",n:"IRAP therapy + shockwave, RF fetlock. Last combined treatment."},
+  {d:"2026-06-24",t:"Farrier",p:"Sara Ferguson",n:"Reset. Addressing balance / negative palmar angle. 6-week cycle."},
+  {d:"2026-06-25",t:"Rehab",p:"ESMR-AZ",n:"Discharged — sound trotting in hand and on lunge both directions."}
+];
+const UP_SEED = [
+  {d:"2026-07-19",t:"Modality",p:"Dr. Smith / ESMR",n:"IRAP + shockwave RF fetlock due (30–45 days after Jun 4). Needs scheduling."},
+  {d:"2026-07-25",t:"Vet",p:"Dr. Chauncey Smith",n:"30-day post-discharge recheck to advance workload. Needs scheduling."},
+  {d:"2026-08-05",t:"Farrier",p:"Sara Ferguson",n:"Reset — 6 weeks after Jun 24. Bring farrier rads."}
+];
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const get=(k,f)=>{try{const v=localStorage.getItem(k);return v==null?f:JSON.parse(v)}catch(e){return f}};
+const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const escapeHtml=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const parseD=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate())};
+const fmt=s=>parseD(s).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+const fmtShort=s=>parseD(s).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+const addDays=(dt,n)=>{const x=new Date(dt);x.setDate(x.getDate()+n);return x};
+const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+const tagClass=t=>({Imaging:"t-imaging",Modality:"t-modality",Farrier:"t-farrier",Bodywork:"t-bodywork",Rehab:"t-rehab",Vet:"t-vet"}[t]||"t-vet");
+
+/* ---------- current phase ---------- */
+function startDate(){return get(LS.start,DEFAULT_START)}
+function programDay(ref){ // 1-indexed day since start
+  const diff=Math.floor((parseD(iso(ref))-parseD(startDate()))/86400000);
+  return diff+1;
+}
+function phaseForDate(ref){
+  const day=programDay(ref);
+  if(day<1) return {idx:-1,day};
+  const wk=Math.ceil(day/7);
+  for(let i=0;i<PHASES.length;i++) if(PHASES[i].wk.includes(wk)) return {idx:i,day,wk};
+  return {idx:PHASES.length,day,wk}; // past week 6
+}
+
+/* ---------- tabs ---------- */
+$$("nav.tabs button").forEach(b=>b.onclick=()=>{
+  $$("nav.tabs button").forEach(x=>x.classList.remove("active"));
+  $$(".view").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); $("#"+b.dataset.view).classList.add("active");
+});
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  const ph=phaseForDate(today());
+  const chip=$("#statusChip");
+  if(ph.idx===-1){$("#ovPhase").textContent="Starts "+fmtShort(startDate());$("#ovDay").textContent="—";$("#ovRide").textContent="—";}
+  else if(ph.idx>=PHASES.length){$("#ovPhase").textContent="Post Week 6";$("#ovDay").textContent="Day "+ph.day;$("#ovRide").textContent="Per recheck";chip.textContent="Awaiting recheck";}
+  else{const p=PHASES[ph.idx];$("#ovPhase").textContent=p.n;$("#ovDay").textContent="Day "+ph.day+" · Week "+ph.wk;$("#ovRide").textContent=p.ride.replace("Ride ","");chip.textContent=p.n+" · ridden work";}
+  $("#startDate").value=startDate();
+}
+
+/* ---------- workload ---------- */
+function renderWorkload(){
+  const sd=parseD(startDate());
+  const cur=phaseForDate(today());
+  const box=$("#phaseList"); box.innerHTML="";
+  PHASES.forEach((p,i)=>{
+    const s=addDays(sd,(p.wk[0]-1)*7), e=addDays(sd,p.wk[1]*7-1);
+    const now=(i===cur.idx);
+    const el=document.createElement("div");
+    el.className="phase"+(now?" now open":"");
+    el.innerHTML=`
+      <div class="phase-head">
+        <span class="phase-num">${p.n}</span>
+        <span class="phase-title">${p.ride}</span>
+        ${now?'<span class="now-tag">Now</span>':''}
+        <span class="phase-dates">${s.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${e.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+        <span class="caret">▶</span>
+      </div>
+      <div class="phase-body"><ul>${p.items.map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+    el.querySelector(".phase-head").onclick=()=>el.classList.toggle("open");
+    box.appendChild(el);
+  });
+}
+
+/* ---------- checklist ---------- */
+function checkRef(){return $("#checkDate").value||iso(today())}
+function checkStore(){return get(LS.check,{})}
+function renderChecklist(){
+  const ref=checkRef(), day=parseD(ref);
+  const ph=phaseForDate(day);
+  const store=checkStore(); const dayState=store[ref]||{};
+  let ride=[];
+  $("#clHeader").textContent=day.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  if(ph.idx<0){$("#clPhaseLine").textContent="Program hasn't started yet — Week 1 begins "+fmtShort(startDate())+".";}
+  else if(ph.idx>=PHASES.length){$("#clPhaseLine").textContent="Past Week 6 — follow Dr. Smith's recheck instructions.";}
+  else {const p=PHASES[ph.idx];$("#clPhaseLine").textContent=p.n+" (Week "+ph.wk+", Day "+ph.day+" of program).";ride=p.items;}
+  const rideBox=$("#checkRide"); rideBox.innerHTML="";
+  ride.forEach((txt,i)=>rideBox.appendChild(mkCheck("r"+i,txt,"","ride",dayState,ref)));
+  const band=BANDS[day.getDay()];
+  $("#bandPill").textContent=band;
+  const walkerBox=$("#checkWalker"); walkerBox.innerHTML="";
+  walkerBox.appendChild(mkCheck("w0","Walker — up to 30 min","Equiband today: "+band,"",dayState,ref));
+  const poleBox=$("#checkPole"); poleBox.innerHTML="";
+  POLE.forEach((p,i)=>poleBox.appendChild(mkCheck("pl"+i,p.t,p.d,"",dayState,ref)));
+  const coreBox=$("#checkCore"); coreBox.innerHTML="";
+  CORE.forEach((c,i)=>coreBox.appendChild(mkCheck("c"+i,c.t,c.d,c.last?"last":(c.post?"post":""),dayState,ref)));
+  const optBox=$("#checkOptional"); optBox.innerHTML="";
+  OPTIONAL.forEach(o=>optBox.appendChild(mkCheck("o_"+o.id,o.t,"","",dayState,ref)));
+  updateBar();
+}
+function mkCheck(id,title,desc,pill,dayState,ref){
+  const row=document.createElement("label"); row.className="ex"+(dayState[id]?" checked":"");
+  row.innerHTML=`<input type="checkbox" ${dayState[id]?"checked":""}>
+    <span class="lbl"><span class="t">${title}${pill==="last"?'<span class="pill last">do last</span>':''}${pill==="post"?'<span class="pill post">after work</span>':''}</span>
+    ${desc?`<span class="d">${desc}</span>`:''}</span>`;
+  row.querySelector("input").onchange=e=>{
+    const store=checkStore(); store[ref]=store[ref]||{}; store[ref][id]=e.target.checked; set(LS.check,store);
+    row.classList.toggle("checked",e.target.checked); updateBar();
+  };
+  return row;
+}
+function updateBar(){
+  const boxes=$$("#checkRide input, #checkWalker input, #checkPole input, #checkCore input");
+  const done=boxes.filter(b=>b.checked).length;
+  const pct=boxes.length?Math.round(done/boxes.length*100):0;
+  $("#checkBar").style.width=pct+"%";
+  $("#checkCount").textContent=done+" of "+boxes.length+" done";
+}
+$("#resetCheck").onclick=()=>{const store=checkStore();delete store[checkRef()];set(LS.check,store);renderChecklist();};
+$("#printCheck").onclick=()=>window.print();
+$("#checkDate").onchange=renderChecklist;
+
+/* ---------- appointments ---------- */
+const SEED=[
+  ...UP_SEED.map((a,i)=>({...a,id:"su"+i})),
+  ...PAST.map((a,i)=>({...a,id:"sp"+i}))
+];
+const APPT_TYPES=["Vet","Modality","Farrier","Bodywork","Imaging","Rehab"];
+let editingId=null;
+
+function migrateAppts(){
+  if(localStorage.getItem(LS.user)==null){
+    const old=[...get(LS.up,[]),...get(LS.padd,[])];
+    if(old.length) set(LS.user,old);
+  }
+  if(localStorage.getItem(LS.ov)==null){
+    const del=get(LS.del,[]);
+    if(del.length){const ov={};del.forEach(pid=>{ov["sp"+pid.replace(/^p/,"")]={deleted:true};});set(LS.ov,ov);}
+  }
+}
+function allAppts(){
+  const ov=get(LS.ov,{});
+  const seeds=SEED.map(s=>{const o=ov[s.id]; if(o&&o.deleted)return null; return o?{...s,...o}:{...s};}).filter(Boolean);
+  return [...seeds,...get(LS.user,[])];
+}
+function renderAppts(){
+  const list=allAppts(), t=iso(today());
+  const up=list.filter(a=>a.d>=t).sort((a,b)=>a.d.localeCompare(b.d));
+  const past=list.filter(a=>a.d<t).sort((a,b)=>b.d.localeCompare(a.d));
+  $("#upBody").innerHTML=up.map(a=>a.id===editingId?editRow(a,true):viewRow(a,true)).join("")||`<tr><td colspan=5 class=note>Nothing scheduled yet.</td></tr>`;
+  $("#pastBody").innerHTML=past.map(a=>a.id===editingId?editRow(a,false):viewRow(a,false)).join("")||`<tr><td colspan=5 class=note>No history yet.</td></tr>`;
+  bindApptActions();
+}
+function viewRow(a,isUp){
+  return `<tr class="${isUp?'up-row':''}">
+    <td style="white-space:nowrap">${fmt(a.d)}</td>
+    <td><span class="tag ${tagClass(a.t)}">${a.t}</span></td>
+    <td>${escapeHtml(a.p)}</td><td>${escapeHtml(a.n)}</td>
+    <td class="no-print" style="white-space:nowrap">
+      <button class="edit" data-id="${a.id}">Edit</button>
+      <button class="del" data-id="${a.id}">×</button></td></tr>`;
+}
+function editRow(a,isUp){
+  return `<tr class="editing">
+    <td><input type="date" class="e-d" value="${a.d}"></td>
+    <td><select class="e-t">${APPT_TYPES.map(t=>`<option ${t===a.t?"selected":""}>${t}</option>`).join("")}</select></td>
+    <td><input type="text" class="e-p" value="${escapeHtml(a.p)}"></td>
+    <td><input type="text" class="e-n" value="${escapeHtml(a.n)}"></td>
+    <td class="no-print" style="white-space:nowrap">
+      <button class="save" data-id="${a.id}">Save</button>
+      <button class="cancel">Cancel</button></td></tr>`;
+}
+function bindApptActions(){
+  $$(".edit").forEach(b=>b.onclick=()=>{editingId=b.dataset.id;renderAppts();});
+  $$(".cancel").forEach(b=>b.onclick=()=>{editingId=null;renderAppts();});
+  $$(".save").forEach(b=>b.onclick=()=>saveEdit(b.dataset.id));
+  $$(".del").forEach(b=>b.onclick=()=>delAppt(b.dataset.id));
+}
+function saveEdit(id){
+  const tr=document.querySelector("tr.editing"); if(!tr)return;
+  const d=tr.querySelector(".e-d").value; if(!d){tr.querySelector(".e-d").focus();return;}
+  const upd={d,t:tr.querySelector(".e-t").value,p:tr.querySelector(".e-p").value.trim(),n:tr.querySelector(".e-n").value.trim()};
+  if(id.startsWith("u")){
+    const users=get(LS.user,[]); const i=users.findIndex(x=>x.id===id);
+    if(i>=0){users[i]={...users[i],...upd};set(LS.user,users);}
+  } else {
+    const ov=get(LS.ov,{}); ov[id]={...(ov[id]||{}),...upd}; set(LS.ov,ov);
+  }
+  editingId=null; renderAppts();
+}
+function delAppt(id){
+  if(id.startsWith("u")){set(LS.user,get(LS.user,[]).filter(x=>x.id!==id));}
+  else {const ov=get(LS.ov,{});ov[id]={...(ov[id]||{}),deleted:true};set(LS.ov,ov);}
+  if(editingId===id)editingId=null;
+  renderAppts();
+}
+$("#addAppt").onclick=()=>{
+  const d=$("#nDate").value; if(!d){$("#nDate").focus();return;}
+  const a={id:"u"+Date.now(),d,t:$("#nType").value,p:$("#nProv").value.trim(),n:$("#nNotes").value.trim()};
+  set(LS.user,[...get(LS.user,[]),a]);
+  $("#nDate").value="";$("#nProv").value="";$("#nNotes").value="";
+  renderAppts();
+};
+
+/* ---------- start date ---------- */
+$("#startDate").onchange=e=>{set(LS.start,e.target.value||DEFAULT_START);boot();};
+
+/* ---------- boot ---------- */
+function boot(){
+  if(!$("#checkDate").value)$("#checkDate").value=iso(today());
+  migrateAppts();
+  renderOverview();renderWorkload();renderChecklist();renderAppts();
+}
+boot();
+</script>
+</body>
+</html>
